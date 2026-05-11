@@ -36,21 +36,31 @@ export const getPlanById = async (req, res) => {
       });
     }
     const response = await pool.query(
-      `SELECT pe.id_plan, pe.id_ejercicio, e.detalle, e.id_tipo_ejercicio, te.detalle AS tipo_ejercicio, pe.series, pe.rep, pe.peso
+      `SELECT pe.id_plan, pe.id_ejercicio, e.detalle,
+      e.id_tipo_ejercicio, te.detalle AS tipo_ejercicio, pe.series, pe.rep, pe.peso
       FROM plan_ejercicio AS pe
       INNER JOIN ejercicio AS e ON pe.id_ejercicio = e.id
       INNER JOIN tipo_ejercicio AS te ON e.id_tipo_ejercicio = te.id
-      WHERE pe.id_plan=$1`,
+      WHERE pe.id_plan=$1
+      ORDER BY tipo_ejercicio`,
       [id],
     );
 
-    console.log(response.rows);
+    const agrupados = response.rows.reduce((acc, row) => {
+      if (!acc[row.tipo_ejercicio]) {
+        acc[row.tipo_ejercicio] = [];
+      }
+      acc[row.tipo_ejercicio].push(row);
+      return acc;
+    }, {});
+    console.log(agrupados);
 
     res.status(200).json({
       message: "Se obtuvieron los ejercicios exitosamente",
-      ejercicios: response.rows,
+      ejercicios: agrupados,
     });
   } catch (error) {
     console.log(error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
